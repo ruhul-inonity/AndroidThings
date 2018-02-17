@@ -14,139 +14,73 @@ import com.google.android.things.pio.PeripheralManagerService;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Skeleton of an Android Things activity.
- * <p>
- * Android Things peripheral APIs are accessible through the class
- * PeripheralManagerService. For example, the snippet below will open a GPIO pin and
- * set it to HIGH:
- * <p>
- * <pre>{@code
- * PeripheralManagerService service = new PeripheralManagerService();
- * mGpio = service.openGpio("BCM6");
- * mGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
- * mGpio.setValue(true);
- * }</pre>
- * <p>
- * For more complex peripherals, look for an existing user-space driver, or implement one if none
- * is available.
- *
- * @see <a href="https://github.com/androidthings/contrib-drivers#readme">https://github.com/androidthings/contrib-drivers#readme</a>
- */
 public class MainActivity extends Activity {
     private String TAG = "MainActivity";
 
-    Button button;
-    Button buttonClose;
-    TextView textView;
+    private static final String TOUCH_BUTTON_A_PIN = "BCM21";
 
-    int i = 1;
-    private static final String GPIO_NAME = "BCM26";
-    private Gpio mGpio;
-
-    PeripheralManagerService manager;
+    private Gpio bus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        textView = findViewById(R.id.txtDemo);
-        button = findViewById(R.id.btnClick);
-        buttonClose = findViewById(R.id.btnClose);
-        manager = new PeripheralManagerService();
+        PeripheralManagerService service = new PeripheralManagerService();
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                textView.setText("I have changed! my value is " + i);
-                i++;
-            }
-        });
+        try {
+            bus = service.openGpio(TOUCH_BUTTON_A_PIN);
+        } catch (IOException e) {
+            throw new IllegalStateException(TOUCH_BUTTON_A_PIN + " bus cannot be opened.", e);
+        }
 
-        buttonClose.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                MainActivity.this.finish();
-            }
-        });
+        try {
+            bus.setDirection(Gpio.DIRECTION_IN);
+            bus.setActiveType(Gpio.ACTIVE_LOW);
+        } catch (IOException e) {
+            throw new IllegalStateException(TOUCH_BUTTON_A_PIN + " bus cannot be configured.", e);
+        }
     }
 
-    public void configureInput(Gpio gpio) throws IOException {
-        // Initialize the pin as an input
-        gpio.setDirection(Gpio.DIRECTION_IN);
-        // Low voltage is considered active
-        gpio.setActiveType(Gpio.ACTIVE_LOW);
-
-        // Register for all state changes
-        gpio.setEdgeTriggerType(Gpio.EDGE_BOTH);
-        gpio.registerGpioCallback(mGpioCallback);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        try {
+            bus.setEdgeTriggerType(Gpio.EDGE_BOTH);
+            bus.registerGpioCallback(touchButtonACallback);
+        } catch (IOException e) {
+            throw new IllegalStateException(TOUCH_BUTTON_A_PIN + " bus cannot be monitored.", e);
+        }
     }
 
-    private GpioCallback mGpioCallback = new GpioCallback() {
+    private final GpioCallback touchButtonACallback = new GpioCallback() {
         @Override
         public boolean onGpioEdge(Gpio gpio) {
             try {
-                // Read the active low pin state
                 if (gpio.getValue()) {
-                    // Pin is LOW
+                    Log.i(TAG, "............... ON PRESSED DOWN");
                 } else {
-                    // Pin is HIGH
+                    Log.i(TAG, "............... ON PRESSED UP");
                 }
-
-                // Continue listening for more interrupts
-                return true;
             } catch (IOException e) {
-                e.printStackTrace();
-                return false;
+                throw new IllegalStateException(TOUCH_BUTTON_A_PIN + " cannot be read.", e);
             }
-        }
-
-
-        @Override
-        public void onGpioError(Gpio gpio, int error) {
-            Log.w(TAG, gpio + ": Error event " + error);
+            return true;
         }
     };
 
+    @Override
+    protected void onStop() {
+        bus.unregisterGpioCallback(touchButtonACallback);
+        super.onStop();
+    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        if (mGpio != null) {
-            try {
-                mGpio.close();
-                mGpio = null;
-                if (mGpio != null) {
-                    mGpio.unregisterGpioCallback(mGpioCallback);
-                }
-            } catch (IOException e) {
-                Log.w(TAG, "Unable to close GPIO", e);
-            }
-        }
-    }
-
-
-    public void configureOutput(Gpio gpio) throws IOException {
-
         try {
-                mGpio = manager.openGpio("BCM26");
-                mGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
-                mGpio.setValue(true);
-
+            bus.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("TUT", TOUCH_BUTTON_A_PIN + " bus cannot be closed, you may experience errors on next launch.", e);
         }
-    }
-
-    public void seeRegisterList(){
-            List<String> portList = manager.getGpioList();
-                if (portList.isEmpty()) {
-                    Log.i(TAG, "No GPIO port available on this device.");
-                } else {
-                    Log.i(TAG, "List of available ports: " + portList);
-                    //textView.setText(portList.toString());
-                }
     }
 }
