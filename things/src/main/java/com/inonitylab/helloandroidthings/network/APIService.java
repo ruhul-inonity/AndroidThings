@@ -3,6 +3,7 @@ package com.inonitylab.helloandroidthings.network;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 /**
  * Created with love by inonity on 2/19/18.
@@ -10,6 +11,6 @@ import retrofit2.http.Path;
 
 public interface APIService {
 
-    @GET("PutCount?value={id}")
-    Call<Void> setCountRequest(@Path("id") String id);
+    @GET("PutCount?value=1")
+    Call<Void> setCountRequest(@Query("id") String id);
 }

@@ -26,21 +26,28 @@ public class MainActivity extends Activity {
 
     private static final String TOUCH_BUTTON_A_PIN = "BCM21";
 
-    private Gpio bus = null;
+    private Gpio bus;
     int callCounter = 0;
+    Button btnClose;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
         apiService = new ApiClient().getClient().create(APIService.class);
 
         PeripheralManagerService service = new PeripheralManagerService();
+        btnClose = findViewById(R.id.btnClose);
+        btnClose.setOnClickListener(view -> {
+            onStop();
+            onDestroy();
+            MainActivity.this.finish();
+        });
+       // bus = null;
 
         try {
-                if (bus != null){
-                    bus.close();
-                }
+
             bus = service.openGpio(TOUCH_BUTTON_A_PIN);
         } catch (IOException e) {
             throw new IllegalStateException(TOUCH_BUTTON_A_PIN + " bus cannot be opened.", e);
@@ -57,12 +64,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-       /* try {
+        try {
             bus.setEdgeTriggerType(Gpio.EDGE_BOTH);
             bus.registerGpioCallback(touchButtonACallback);
         } catch (IOException e) {
             throw new IllegalStateException(TOUCH_BUTTON_A_PIN + " bus cannot be monitored.", e);
-        }*/
+        }
     }
 
     private final GpioCallback touchButtonACallback = new GpioCallback() {
@@ -111,6 +118,7 @@ public class MainActivity extends Activity {
         bus.unregisterGpioCallback(touchButtonACallback);
         try {
             bus.close();
+            bus = null;
         } catch (IOException e) {
             Log.e("TUT", TOUCH_BUTTON_A_PIN + " bus cannot be closed, you may experience errors on next launch.", e);
         }
