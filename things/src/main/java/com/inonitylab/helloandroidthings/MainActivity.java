@@ -91,16 +91,16 @@ public class MainActivity extends Activity {
 
     private void sendNetworkCall() {
         callCounter++;
-        Call<Void> call = apiService.setCountRequest(String.valueOf(callCounter));
-        call.enqueue(new Callback<Void>() {
+        Call<String> call = apiService.setCountRequest(String.valueOf(callCounter));
+        call.enqueue(new Callback<String>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
+            public void onResponse(Call<String> call, Response<String> response) {
                 Log.i(TAG, "onResponse: .................................. success ");
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Log.i(TAG, "onFailure: ........................ failed ");
+            public void onFailure(Call<String> call, Throwable t) {
+                Log.i(TAG, "onFailure: ........................ failed " +t);
             }
         });
 

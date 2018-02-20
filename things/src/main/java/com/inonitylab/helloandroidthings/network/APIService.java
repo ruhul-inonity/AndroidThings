@@ -1,6 +1,7 @@
 package com.inonitylab.helloandroidthings.network;
 
 import retrofit2.Call;
+import retrofit2.Response;
 import retrofit2.http.GET;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
@@ -12,5 +13,5 @@ import retrofit2.http.Query;
 public interface APIService {
 
     @GET("PutCount?value=1")
-    Call<Void> setCountRequest(@Query("id") String id);
+    Call<String> setCountRequest(@Query("id") String sid);
 }
